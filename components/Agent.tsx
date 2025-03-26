@@ -1,6 +1,7 @@
 'use client'
 
 import { interviewer } from '@/constants';
+import { createFeedback } from '@/lib/actions/general.action';
 import { cn } from '@/lib/utils';
 import { vapi } from '@/lib/vapi.sdk';
 import Image from 'next/image';
@@ -19,7 +20,7 @@ enum CallStatus {
     content: string;
   }
 
-const Agent = ({ userName, userId, type, interviewId, questions }: AgentProps) => {
+const Agent = ({ userName, userId, type, interviewId, questions, feedbackId }: AgentProps) => {
 
   const router = useRouter();
 
@@ -74,30 +75,37 @@ const Agent = ({ userName, userId, type, interviewId, questions }: AgentProps) =
     };
   }, [])
 
-  const handleGenerateFeedback = async (messages: SavedMessage[]) => {
-    console.log("handleGenerateFeedback");
+  useEffect(() => {
+    if (messages.length > 0) {
+      setLastMessage(messages[messages.length - 1].content);
+    }
 
-    const { success, id } = {
-      success: true,
-      id: 'feedback-id'
+    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+      console.log("handleGenerateFeedback");
+
+      const { success, feedbackId: id } = await createFeedback({
+        interviewId: interviewId!,
+        userId: userId!,
+        transcript: messages,
+        feedbackId,
+      });
+
+      if (success && id) {
+        router.push(`/interview/${interviewId}/feedback`);
+      } else {
+        console.log("Error saving feedback");
+        router.push("/");
+      }
     };
 
-    if (success && id) {
-      router.push(`/interview/${interviewId}/feedback`);
-    } else {
-      console.log("Error saving feedback");
-      router.push("/");
-    }
-  }
-
-  useEffect(() => {
     if (callStatus === CallStatus.FINISHED) {
       if (type === "generate") {
         router.push("/");
       } else {
         handleGenerateFeedback(messages);
       }
-  }}, [messages, callStatus, type, userId])
+    }
+  }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
