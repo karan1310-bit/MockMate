@@ -17,33 +17,27 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "fire
 import { auth } from "@/firebase/client";
 import { signIn, signUp } from "@/lib/actions/auth.action";
 
-const formSchema = z.object({
-  username: z.string().min(2).max(50),
-});
-
 const authFormSchema = (type: FormType) => {
-    return z.object({
-      name: type === 'sign-up' ? z.string().min(3) : z.string().optional(),
-      email: z.string().email(),
-      password: z.string().min(8),
-    });
-  };
+  return z.object({
+    name: type === "sign-up" ? z.string().min(3) : z.string().optional(),
+    email: z.string().email(),
+    password: z.string().min(3),
+  });
+};
 
 const AuthForm = ({ type }: { type: FormType }) => {
+  const router = useRouter();
 
-  const router = useRouter();  
   const formSchema = authFormSchema(type);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-        email: "",
-        password: "",
+      email: "",
+      password: "",
     },
   });
 
-  // 2. Define a submit handler.
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       if (type === "sign-up") {
